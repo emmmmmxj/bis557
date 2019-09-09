@@ -15,4 +15,7 @@ This homework is due by the end of the day on September 25th 2019.
 5.  Add the package to [Travis-CI](https://travis-ci.com/) and update
     the `README.md` file so that the badge points to your Travis build
     (hint: use `usethis::use_travis()`). You will know it is working
-    when the badge is green and gives the message “passing”.
+    when the badge is green and gives the message “passing”. Exra hint:
+    sign up for the Github student pack.
+6.  Add code coverage (with either [Coveralls](https://coveralls.io/) or
+    [CodeCov](https://codecov.io/)). Hint use `usethis::use_coverage()`).
