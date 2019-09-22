@@ -7,8 +7,8 @@
 #' The linear_model function implements the QR decomposition to obtain least
 #' square estimates.
 #'
-#' On the other hand, the gradient_descent function uses the gradient descent algorithm to obtain
-#' least square estimates.
+#' On the other hand, the gradient_descent function uses the gradient descent 
+#' algorithm to obtain estimated coefficients.
 #'
 #' @docType package
 #' @name linearmodel
