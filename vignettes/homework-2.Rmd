@@ -17,8 +17,6 @@ knitr::opts_chunk$set(
 
 This vignette contains my answers to question 1, 4 and 5 for homework 2 of BIS 557.    
 
-_Note: Even this vignette was written without for loops, knitting the vignette takes about 2 minutes._
-
 ```{r setup}
 library(bis557)
 library(casl)
@@ -161,12 +159,12 @@ $\boldsymbol{\beta}$ increases.
 
 Now let's demonstrate that ridge regression can decrease statistical error when 
 numerical stability is increased. The mean error rate below is the average RMSE 
-of ridge $\boldsymbol{\widehat \beta}$ over 100 trials in numerical unstable 
-cases with highly collinear $\mathbf{X}$.
+of ridge $\boldsymbol{\widehat \beta}$ over 25 trials in numerical unstable 
+cases with highly collinear $\mathbf{X}$. The number of trials is reduced to increase the knitting speed of this vignette.
 
 ```{r}
 # X is the same collinear design matrix from the last chunk
-mean(replicate(100, ridge_error(X = X, beta = beta)))
+mean(replicate(25, ridge_error(X = X, beta = beta)))
 ```
 
 Solving the linear model with colinear $\mathbf{X}$, ridge regression returns an 
