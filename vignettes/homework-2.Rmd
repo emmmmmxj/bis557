@@ -1,0 +1,253 @@
+---
+title: "homework-2"
+author: Xiaojing Zhu
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{homework-2}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignette contains my answers to question 1, 4 and 5 for homework 2 of BIS 557.    
+
+_Note: Even this vignette was written without for loops, knitting the vignette takes about 2 minutes._
+
+```{r setup}
+library(bis557)
+library(casl)
+```
+
+### Question 1
+_CASL 2.11 Exercise problem number 5._
+
+_Consider the simple regression model with only a scalar $x$ and intercept:_
+$$y = \beta_0 + \beta_1 \cdot x$$
+_Using the explicit formula for the inverse of a 2-by-2 matrix, write down the_
+_least square estimators for_ $\widehat \beta_0$ and $\widehat \beta_1$.
+        
+        
+To explicitly solve for 
+$\boldsymbol{\widehat\beta} =  \left(\begin{array}{cc} \widehat \beta_0\\ \widehat \beta1 \end{array}\right)$, we need to find the solution of the normal equation, 
+$\mathbf{X}^{\intercal}\mathbf{X} \boldsymbol{\beta} = \mathbf{X}^{\intercal}\mathbf{Y}$, 
+which minimizes the residual sum of squares.
+
+We are given that $x$ is a scalar, so $\mathbf{X} = (1 \space \space x)$ and 
+$\boldsymbol{\widehat\beta} = (\mathbf{X}^{\intercal}\mathbf{X})^{-1}\mathbf{X}^{\intercal}\mathbf{Y}$.
+
+However, we cannot solve for the inverse of the 2-by-2 matrix 
+$$\mathbf{X}^{\intercal}\mathbf{X} 
+= \left(\begin{array}{cc} 
+1 & x\\
+x & x^2 
+\end{array}\right) $$
+
+because the determinant of the matrix is 0.
+
+We can circumvent this problem by using singular value decomposition (SVD).
+
+Since $n = 1 < p=2$, we use the full SVD $$\mathbf{X} = \bar{\mathbf{U}}\bar{\mathbf{\Sigma}}\bar{\mathbf{V}}^{\intercal}$$
+
+, where $\bar{\mathbf{U}}_{1 \times 1}$ is a scalar $u$, 
+$\bar{\mathbf{V}}_{2 \times 2}$ consists of $v_1$ and $v_2$, and 
+$\bar{\mathbf{\Sigma}}_{1 \times 2}$ consists of the singular value $\sigma$.
+
+In our case, $\mathbf{\widehat Y} = \mathbf{X}\boldsymbol{\widehat\beta}$ is 
+$\hat y =  \left(\begin{array}{cc} 1 & x \end{array}\right) \left(\begin{array}{cc} \widehat \beta_0\\ \widehat \beta1 \end{array}\right)$
+
+Plug in the full SVD of $\mathbf{X}$ and solve for $\boldsymbol{\widehat\beta}$ returns
+$$\widehat \beta_0 = \frac{v_1 uy}{\sigma}$$ 
+and $$\widehat \beta_1 = \frac{v_2 uy}{\sigma}$$
+
+
+### Question 4
+_Reproduce results in CASL section 2.8, which shows that as the numerical _ 
+_stability decreases, statistical errors increases. Then show that using ridge _ 
+_regression can increase numerical stability and decrease statistical error._
+    
+    
+Before doing the simulation, write two functions to calculate the root mean 
+square error (RMSE) in order to check how well $\boldsymbol{\widehat\beta}$ 
+estimates the true $\boldsymbol{\beta}$.
+
+```{r}
+ols_error <- function(X, beta) {
+  # Randomly generate y based on X
+  y <- X %*% beta + rnorm(nrow(X))
+  # Use casl package to solve for betahat with svd
+  betahat <- casl_ols_svd(X, y)
+  # Calculate RMSE for betahat
+  return(sqrt(sum((betahat - beta)^2)))
+}
+```
+
+```{r}
+ridge_error <- function(X, beta) {
+  # Randomly generate y based on X
+  y <- X %*% beta + rnorm(nrow(X))
+  data <- data.frame(y, X)
+  # Use my bis557 package to solve for betahat with ridge regression
+  # Use the cross-validated best lambda to solve for betahat
+  bestlambda <- best_lambda(formula = y ~ ., 
+                            data = data, nfold = 5, intercept = FALSE,
+                            lambda_list = 10^seq(-2, 2, by = .1))
+  
+  betahat <- as.numeric(ridge_regression(formula = y ~ ., 
+                                         data = data, intercept = FALSE,
+                                         lambda = bestlambda)$coefficients)
+  # Calculate RMSE for betahat
+  return(sqrt(sum((betahat - beta)^2)))
+}
+```
+
+Start with a numerically stable case with ordinary least square (OLS). 
+Simulate a data matrix $\mathbf{X}$ in which the variables are randomly sampled 
+from a normal distribution without collinearity. Then report how well the OLS 
+$\boldsymbol{\widehat\beta}$ estimates $\boldsymbol{\beta}$ with average RMSE 
+over 100 trials.
+
+```{r}
+# Create a numerically stable X with 1000 rows and 25 columns
+set.seed(2019)
+X <- matrix(rnorm(1000 * 25), ncol = 25)
+# Calculate the condition number
+svals <- svd(crossprod(X))$d
+max(svals) / min(svals)
+```
+
+The condition number is quite small, meaning that the numerical stability is high.
+
+```{r}
+# Set the first coordinate of true beta to 1
+beta <- c(1, rep(0, 25 - 1))
+# Replicate the OLS trial 100 times and report the average RMSE
+mean(replicate(100, ols_error(X = X, beta = beta)))
+```
+
+The average RMSE is 0.159, which means that the mean error rate is quite low.
+
+Next, we disturb the numerical stability by making columns of $\mathbf{X}$ colinear. 
+Specifically, the first column of $\mathbf{X}$ is now a linear combination of the first 
+and second columns of original $\mathbf{X}$.
+
+```{r}
+# Replace the first column of X with a collinear column
+# This creates a numerically unstable X
+X[ ,1] <- X[ ,1] * 0.001 + X[ ,2] * (1 - 0.001) 
+# Calculate the condition number
+svals <- svd(crossprod(X))$d
+max(svals) / min(svals)
+```
+
+The condition number has greatly increased, meaning that the numerical stability is very low.
+
+```{r}
+# Replicate the OLS trial 100 times and report the average RMSE
+mean(replicate(100, ols_error(X = X, beta = beta)))
+```
+
+After numerical stability decreases, the average RMSE or the mean error rate has
+increased to 39.090.
+
+We have reproduced the simulation provided by section 2.8 of CASL: 
+as numerical stability decreases, the statistical error in estimating 
+$\boldsymbol{\beta}$ increases.
+
+Now let's demonstrate that ridge regression can decrease statistical error when 
+numerical stability is increased. The mean error rate below is the average RMSE 
+of ridge $\boldsymbol{\widehat \beta}$ over 100 trials in numerical unstable 
+cases with highly collinear $\mathbf{X}$.
+
+```{r}
+# X is the same collinear design matrix from the last chunk
+mean(replicate(100, ridge_error(X = X, beta = beta)))
+```
+
+Solving the linear model with colinear $\mathbf{X}$, ridge regression returns an 
+average error rate of 0.723, much smaller than the average error rate returned 
+by the ordinary least square method (39.090).
+
+Therefore, we can conclude that ridge regression is able to resist statisitcal 
+error inflation when numerical stability is low.
+
+
+### Question 5
+_Consider the LASSO penalty_
+$$\frac{1}{2n} || \mathbf{Y} - \mathbf{X} \boldsymbol{\beta} ||^2_2 + \lambda || \boldsymbol{\beta} ||_1$$
+
+_Show that if_ $|\mathbf{X}^{\intercal}_j \mathbf{Y}| \le n\lambda$, 
+_then_ $\widehat \beta^\text{LASSO}$ _must be zero_.
+
+Let $L$ be the LASSO penalty.
+$$
+\begin{aligned}
+L &= \frac{1}{2n} (\mathbf{Y} - \mathbf{X} \boldsymbol{\beta})^{\intercal}(\mathbf{Y} - \mathbf{X} \boldsymbol{\beta}) + \lambda | \boldsymbol{\beta} | \\
+&= \frac{1}{2n} (\mathbf{Y}^{\intercal}\mathbf{Y}-2\mathbf{Y}^{\intercal}\mathbf{X} \boldsymbol{\beta} +  \boldsymbol{\beta}^{\intercal} \mathbf{X}^{\intercal}\mathbf{X} \boldsymbol{\beta}) + \lambda | \boldsymbol{\beta} | \\
+\\
+\frac{\partial L}{\partial \boldsymbol{\beta}} &= \frac{1}{2n}(-2\mathbf{X}^{\intercal}\mathbf{Y}+2\mathbf{X}^{\intercal}\mathbf{X} \boldsymbol{\beta}) + \lambda \frac{d|\boldsymbol{\beta}|}{d\boldsymbol{\beta} }
+\end{aligned}
+$$
+
+When $\beta_j^\text{OLS} >0, \space \frac{d |\beta_j|}{\beta_j} = \frac{\beta_j}{|\beta_j|} = 1$.
+$$
+\frac{1}{n}(\mathbf{X}^{\intercal}_j \mathbf{X}_j \boldsymbol{\beta}-\mathbf{X}^{\intercal}_j \mathbf{Y}) + \lambda = 0\\
+\widehat \beta^\text{LASSO}_j = \frac{\mathbf{X}^{\intercal}_j \mathbf{Y} - n \lambda}{\mathbf{X}^{\intercal}_j \mathbf{X}_j}
+$$
+
+Given that $|\mathbf{X}^{\intercal}_j \mathbf{Y}| \le  n \lambda$, 
+$- n \lambda \le \mathbf{X}^{\intercal}_j \mathbf{Y} \le  n \lambda \Longrightarrow - 2n \lambda \le \mathbf{X}^{\intercal}_j \mathbf{Y} -n \lambda\le  0$
+
+Since when  $\widehat \beta^\text{OLS}_j > 0$, 
+$\space 0 \le \widehat \beta^\text{LASSO}_j < \widehat \beta^\text{OLS}_j$ 
+assuming $\lambda > 0$.
+The denominator of $\widehat \beta^\text{LASSO}_j$, 
+$\mathbf{X}^{\intercal}_j \mathbf{X}_j$, is always positive. 
+Thus, to satisfy $\widehat \beta^\text{LASSO}_j \ge 0$, 
+the numerator $\mathbf{X}^{\intercal}_j \mathbf{Y} - n \lambda$ must be non-negative.
+
+Because $\mathbf{X}^{\intercal}_j \mathbf{Y} - n \lambda \le 0$ and 
+$\mathbf{X}^{\intercal}_j \mathbf{Y} - n \lambda \ge 0$ must hold at the same time, 
+$\mathbf{X}^{\intercal}_j \mathbf{Y} - n \lambda$ must be zero.
+
+Therefore, when $\beta_j^\text{OLS} >0$,
+$$|\mathbf{X}^{\intercal}_j \mathbf{Y}| \le  n \lambda 
+\Longrightarrow \mathbf{X}^{\intercal}_j \mathbf{Y} - n \lambda=0 
+\Longrightarrow \widehat \beta_j^\text{LASSO} =0
+$$
+
+Similarly, when $\beta_j^\text{OLS} <0, \space \frac{d |\beta_j|}{\beta_j} = -1$.
+$$
+\frac{1}{n}(\mathbf{X}^{\intercal}_j \mathbf{X}_j \boldsymbol{\beta}-\mathbf{X}^{\intercal}_j \mathbf{Y}) - \lambda = 0\\
+\widehat \beta^\text{LASSO}_j = \frac{\mathbf{X}^{\intercal}_j \mathbf{Y} + n \lambda}{\mathbf{X}^{\intercal}_j \mathbf{X}_j}
+$$
+Given that $|\mathbf{X}^{\intercal}_j \mathbf{Y}| \le  n \lambda$, 
+$- n \lambda \le \mathbf{X}^{\intercal}_j \mathbf{Y} \le  n \lambda \Longrightarrow 0 \le \mathbf{X}^{\intercal}_j \mathbf{Y} + n \lambda \le  2n \lambda$
+
+Since when  $\widehat \beta^\text{OLS}_j < 0$, 
+$\space \widehat \beta^\text{OLS}_j < \widehat \beta^\text{LASSO}_j \le 0$ 
+assuming $\lambda > 0$.
+To satisfy $\widehat \beta^\text{LASSO}_j \le 0$, 
+its numerator $\mathbf{X}^{\intercal}_j \mathbf{Y} + n \lambda \le 0$.
+
+Because $\mathbf{X}^{\intercal}_j \mathbf{Y} + n \lambda \ge 0$ and 
+$\mathbf{X}^{\intercal}_j \mathbf{Y} + n \lambda \le 0$ must hold at the same time, 
+$\mathbf{X}^{\intercal}_j \mathbf{Y} + n \lambda$ must be zero.
+
+Therefore, when $\beta_j^\text{OLS} < 0$,
+$$|\mathbf{X}^{\intercal}_j \mathbf{Y}| \le  n \lambda 
+\Longrightarrow \mathbf{X}^{\intercal}_j \mathbf{Y} + n \lambda=0 
+\Longrightarrow \widehat \beta_j^\text{LASSO} =0
+$$
+
+
+Lastly, when $\beta_j^\text{OLS} = 0, \space \frac{d |\beta_j|}{\beta_j} = 0$. 
+$\widehat \beta^\text{LASSO}_j = 0$.
+
+In conclusion, 
+$|\mathbf{X}^{\intercal}_j \mathbf{Y}| \le  n \lambda \Longrightarrow \widehat\beta_j^\text{LASSO} = 0$
