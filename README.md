@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # bis557
 Homework 2 for BIS557
 =======
@@ -24,3 +25,7 @@ This homework is due by the end of the day on September 25th 2019.
 6.  Add code coverage (with either [Coveralls](https://coveralls.io/) or
     [CodeCov](https://codecov.io/)). Hint use `usethis::use_coverage()`).
 >>>>>>> a1df5d1991393128f54feb52cc526e6d9b283344
+=======
+# bis557
+Homework2 BIS557
+>>>>>>> f3435d83ff407caa854b5e64418ce889f2fde52b
