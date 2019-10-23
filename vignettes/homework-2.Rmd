@@ -254,7 +254,7 @@ $$
 
 When $\beta_j^\text{OLS} >0, \space \frac{d |\beta_j|}{\beta_j} = \frac{\beta_j}{|\beta_j|} = 1$.
 $$
-\frac{1}{n}(\mathbf{X}^{\intercal}_j \mathbf{X}_j \boldsymbol{\beta}-\mathbf{X}^{\intercal}_j \mathbf{Y}) + \lambda = 0\\
+\frac{1}{n}(\mathbf{X}^{\intercal}_j \mathbf{X}_j \boldsymbol{\beta}_j-\mathbf{X}^{\intercal}_j \mathbf{Y}) + \lambda = 0\\
 \widehat \beta^\text{LASSO}_j = \frac{\mathbf{X}^{\intercal}_j \mathbf{Y} - n \lambda}{\mathbf{X}^{\intercal}_j \mathbf{X}_j}
 $$
 
@@ -281,7 +281,7 @@ $$
 
 Similarly, when $\beta_j^\text{OLS} <0, \space \frac{d |\beta_j|}{\beta_j} = -1$.
 $$
-\frac{1}{n}(\mathbf{X}^{\intercal}_j \mathbf{X}_j \boldsymbol{\beta}-\mathbf{X}^{\intercal}_j \mathbf{Y}) - \lambda = 0\\
+\frac{1}{n}(\mathbf{X}^{\intercal}_j \mathbf{X}_j \boldsymbol{\beta}_j-\mathbf{X}^{\intercal}_j \mathbf{Y}) - \lambda = 0\\
 \widehat \beta^\text{LASSO}_j = \frac{\mathbf{X}^{\intercal}_j \mathbf{Y} + n \lambda}{\mathbf{X}^{\intercal}_j \mathbf{X}_j}
 $$
 Given that $|\mathbf{X}^{\intercal}_j \mathbf{Y}| \le  n \lambda$, 
