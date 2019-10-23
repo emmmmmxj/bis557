@@ -32,37 +32,97 @@ _least square estimators for_ $\widehat \beta_0$ and $\widehat \beta_1$.
         
         
 To explicitly solve for 
-$\boldsymbol{\widehat\beta} =  \left(\begin{array}{cc} \widehat \beta_0\\ \widehat \beta1 \end{array}\right)$, we need to find the solution of the normal equation, 
+$\boldsymbol{\widehat\beta} =  \left(\begin{array}{cc} \widehat \beta_0\\ \widehat \beta_1 \end{array}\right)$, we need to find the solution of the normal equation, 
 $\mathbf{X}^{\intercal}\mathbf{X} \boldsymbol{\beta} = \mathbf{X}^{\intercal}\mathbf{Y}$, 
 which minimizes the residual sum of squares.
 
-We are given that $x$ is a scalar, so $\mathbf{X} = (1 \space \space x)$ and 
-$\boldsymbol{\widehat\beta} = (\mathbf{X}^{\intercal}\mathbf{X})^{-1}\mathbf{X}^{\intercal}\mathbf{Y}$.
+$$\boldsymbol{\widehat\beta} = (\mathbf{X}^{\intercal}\mathbf{X})^{-1}\mathbf{X}^{\intercal}\mathbf{Y}$$
 
-However, we cannot solve for the inverse of the 2-by-2 matrix 
-$$\mathbf{X}^{\intercal}\mathbf{X} 
+$$
+\mathbf{X}^{\intercal}\mathbf{X} = 
+\left(\begin{array}{cc} 
+1 & 1 & \dots 1\\ 
+x_1 & x_2 & \dots x_n
+\end{array}\right)
+\left(\begin{array}{cc} 
+1 & x_1\\ 
+1 & x_2 \\
+\vdots & \vdots \\
+1 & x_n
+\end{array}\right)
 = \left(\begin{array}{cc} 
-1 & x\\
-x & x^2 
-\end{array}\right) $$
+\sum^n_{i=1}1 & \sum^n_{i=1}x_i\\ 
+\sum^n_{i=1}x_i & \sum^n_{i=1}x_i^2
+\end{array}\right)
+= \left(\begin{array}{cc} 
+n & n \bar x\\ 
+n \bar x & \sum^n_{i=1}x_i^2
+\end{array}\right)
+$$
 
-because the determinant of the matrix is 0.
+$$
+ (\mathbf{X}^{\intercal}\mathbf{X})^{-1} 
+= \frac{1}{n\sum^n_{i=1}x_i^2-n^2 \bar x^2}
+\left(\begin{array}{cc} 
+\sum^n_{i=1}x_i^2 & -n \bar x  \\ 
+-n \bar x & n
+\end{array}\right)
+=\frac{1}{n(\sum^n_{i=1}x_i- \bar x)^2}
+\left(\begin{array}{cc} 
+\sum^n_{i=1}x_i^2 & -n \bar x  \\ 
+-n \bar x & n
+\end{array}\right)
+$$
 
-We can circumvent this problem by using singular value decomposition (SVD).
+$$
+\mathbf{X}^{\intercal}\mathbf{Y} 
+= \left(\begin{array}{cc} 
+1 & 1 & \dots 1\\ 
+x_1 & x_2 & \dots x_n
+\end{array}\right)
+\left(\begin{array}{cc} 
+y_1 \\ y_2 \\ \vdots \\y_n
+\end{array}\right) 
+= \left(\begin{array}{cc} 
+n \bar y\\
+\sum^n_{i=1}x_iy_i
+\end{array}\right)  
+$$
+$$\begin{aligned}
+\boldsymbol{\widehat\beta} 
+=\left(\begin{array}{cc} \widehat \beta_0\\ \widehat \beta_1 \end{array}\right)
+&= \frac{1}{n(\sum^n_{i=1}x_i- \bar x)^2}
+\left(\begin{array}{cc} 
+\sum^n_{i=1}x_i^2 & -n \bar x  \\ 
+-n \bar x & n
+\end{array}\right)
+\left(\begin{array}{cc} 
+n \bar y\\
+\sum^n_{i=1}x_iy_i
+\end{array}\right)\\
+\\
+&= \frac{1}{(\sum^n_{i=1}x_i- \bar x)^2}
+\left(\begin{array}{cc} 
+\bar y \sum^n_{i=1}x_i^2 - \bar x \sum^n_{i=1}x_iy_i\\
+\sum^n_{i=1}x_iy_i-n\bar x \bar y
+\end{array}\right)\\
+\\
+&= \frac{1}{(\sum^n_{i=1}x_i- \bar x)^2}
+\left(\begin{array}{cc} 
+\bar y \sum^n_{i=1}x_i^2 - \bar y \bar x^2 + \bar y \bar x^2 - \bar x \sum^n_{i=1}x_iy_i \\
+\sum^n_{i=1}(x_iy_i- \bar x \bar y )
+\end{array}\right)\\
+\\
+&= 
+\left(\begin{array}{cc} 
+\frac{\bar y (\sum^n_{i=1}x_i^2 - \bar x ^2) - \bar x (\sum^n_{i=1}x_iy_i - \bar x \bar y)}{(\sum^n_{i=1}x_i- \bar x)^2} \\
+\frac{\sum^n_{i=1}(x_i- \bar x)(y_i - \bar y)}{(\sum^n_{i=1}x_i- \bar x)^2}
+\end{array}\right)\\
+\end{aligned}$$
 
-Since $n = 1 < p=2$, we use the full SVD $$\mathbf{X} = \bar{\mathbf{U}}\bar{\mathbf{\Sigma}}\bar{\mathbf{V}}^{\intercal}$$
+Therefore, $$ \widehat \beta_1 = \frac{\sum^n_{i=1}(x_i- \bar x)(y_i - \bar y)}{(\sum^n_{i=1}x_i- \bar x)^2} $$
 
-, where $\bar{\mathbf{U}}_{1 \times 1}$ is a scalar $u$, 
-$\bar{\mathbf{V}}_{2 \times 2}$ consists of $v_1$ and $v_2$, and 
-$\bar{\mathbf{\Sigma}}_{1 \times 2}$ consists of the singular value $\sigma$.
-
-In our case, $\mathbf{\widehat Y} = \mathbf{X}\boldsymbol{\widehat\beta}$ is 
-$\hat y =  \left(\begin{array}{cc} 1 & x \end{array}\right) \left(\begin{array}{cc} \widehat \beta_0\\ \widehat \beta1 \end{array}\right)$
-
-Plug in the full SVD of $\mathbf{X}$ and solve for $\boldsymbol{\widehat\beta}$ returns
-$$\widehat \beta_0 = \frac{v_1 uy}{\sigma}$$ 
-and $$\widehat \beta_1 = \frac{v_2 uy}{\sigma}$$
-
+$$\widehat \beta_0 = \bar y - \widehat \beta_1 \bar x$$
 
 ### Question 4
 _Reproduce results in CASL section 2.8, which shows that as the numerical _ 
